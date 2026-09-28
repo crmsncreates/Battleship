@@ -2,6 +2,7 @@
 using System.Security.Cryptography.X509Certificates;
 using Windows.UI.Popups;
 using Windows.Web.Http;
+using static Battleship.Board;
 
 namespace Battleship;
 
@@ -128,43 +129,6 @@ public class Board
 		return true;
 	}
 
-	public record Ship
-	{
-		public required ShipPlacement Placement { get; init; }
-		public required Cell[] Cells
-		{
-			get;
-			init
-			{
-				ArgumentOutOfRangeException.ThrowIfZero(value.Length);
-				foreach (var cell in value)
-				{
-					cell.Ship = this;
-				}
-				field = value;
-			}
-		}
-
-		public int X => Placement.X;
-		public int Y => Placement.Y;
-		public Orientation Orientation => Placement.Orientation;
-		public bool IsHorizontal => Orientation is Orientation.Horizontal;
-		public bool IsVertical => Orientation is Orientation.Vertical;
-		
-		public int MinX => X;
-		public int MinY => Y;
-		public int MaxX => IsHorizontal ? X + Length : X;
-		public int MaxY => IsVertical ? Y + Length : Y;
-
-		public ShipKind Kind => Placement.Kind;
-		public string Name => Kind.Name;
-		public int Length => Kind.Length;
-
-		public bool IsSunk => Cells.All(static x => x.HasPeg);
-
-		public bool Overlaps(Ship that) => MaxX >= that.MinX && MinX <= that.MaxX && MaxY >= that.MinY && MinY <= that.MaxY;
-		public bool Overlaps(int x, int y) => x >= MinX && x <= MaxX && y >= MinY && y <= MaxY;
-	}
 	public class Cell
 	{
 		public Ship? Ship { get; set; } = null;
@@ -248,6 +212,45 @@ public record GameConfig
 	}
 }
 
+
+
+public record Ship
+{
+	public required ShipPlacement Placement { get; init; }
+	public required Cell[] Cells
+	{
+		get;
+		init
+		{
+			ArgumentOutOfRangeException.ThrowIfZero(value.Length);
+			foreach (var cell in value)
+			{
+				cell.Ship = this;
+			}
+			field = value;
+		}
+	}
+
+	public int X => Placement.X;
+	public int Y => Placement.Y;
+	public Orientation Orientation => Placement.Orientation;
+	public bool IsHorizontal => Orientation is Orientation.Horizontal;
+	public bool IsVertical => Orientation is Orientation.Vertical;
+
+	public int MinX => X;
+	public int MinY => Y;
+	public int MaxX => IsHorizontal ? X + Length : X;
+	public int MaxY => IsVertical ? Y + Length : Y;
+
+	public ShipKind Kind => Placement.Kind;
+	public string Name => Kind.Name;
+	public int Length => Kind.Length;
+
+	public bool IsSunk => Cells.All(static x => x.HasPeg);
+
+	public bool Overlaps(Ship that) => MaxX >= that.MinX && MinX <= that.MaxX && MaxY >= that.MinY && MinY <= that.MaxY;
+	public bool Overlaps(int x, int y) => x >= MinX && x <= MaxX && y >= MinY && y <= MaxY;
+}
 public record ShipKind
 {
 	public required string Name { get; init; }
