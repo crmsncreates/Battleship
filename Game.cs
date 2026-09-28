@@ -16,7 +16,7 @@ public class Game
 {
 	public GameConfig Config => _config;
 	public int PlayerCount => _config.RealPlayerCount;
-	public GameMode Mode => _config.Mode;
+	public IGameMode Mode => _config.Mode;
 	public int BoardWidth => _config.Mode.BoardWidth;
 	public int BoardHeight => _config.Mode.BoardHeight;
 	public IReadOnlyCollection<ShipKind> ShipKinds => _config.Mode.ShipKinds;
@@ -136,28 +136,34 @@ public class Board
 	}
 }
 
-public abstract class GameMode
+public interface IGameMode
 {
 	public abstract int BoardWidth { get; }
 	public abstract int BoardHeight { get; }
 	public abstract IReadOnlyCollection<ShipKind> ShipKinds { get; }
 }
 
-public class NormalGameMode : GameMode
+public class NormalGameMode : IGameMode
 {
-	public override int BoardWidth => 10;
-	public override int BoardHeight => 10;
-	public override IReadOnlyCollection<ShipKind> ShipKinds => [new() { Name = "Carrier", Length = 5 }, new() { Name = "Battleship", Length = 4 }, new() { Name = "Cruiser", Length = 3 }, new() { Name = "Submarine", Length = 3 }, new() { Name = "Destroyer", Length = 2 }];
+	public int BoardWidth => 10;
+	public int BoardHeight => 10;
+	public IReadOnlyCollection<ShipKind> ShipKinds => [new() { Name = "Carrier", Length = 5 }, new() { Name = "Battleship", Length = 4 }, new() { Name = "Cruiser", Length = 3 }, new() { Name = "Submarine", Length = 3 }, new() { Name = "Destroyer", Length = 2 }];
 }
 
-public class OldTimesGameMode : GameMode
+public class OldTimesGameMode : IGameMode
 {
-	public override int BoardWidth => 10;
-	public override int BoardHeight => 10;
-	public override IReadOnlyCollection<ShipKind> ShipKinds => [new() { Name = "Carrier", Length = 5 }, new() { Name = "Battleship", Length = 4 }, new() { Name = "Cruiser", Length = 3 }, new() { Name = "Submarine", Length = 3 }, new() { Name = "Destroyer", Length = 2 }];
+	public int BoardWidth => 10;
+	public int BoardHeight => 10;
+	public IReadOnlyCollection<ShipKind> ShipKinds => [new() { Name = "Carrier", Length = 5 }, new() { Name = "Battleship", Length = 4 }, new() { Name = "Cruiser", Length = 3 }, new() { Name = "Submarine", Length = 3 }, new() { Name = "Destroyer", Length = 2 }];
 }
 
-// TODO! CustomGameMode
+public record CustomGameMode : IGameMode
+{
+	public int BoardWidth { get; init; } = 10;
+	public int BoardHeight { get; init; } = 10;
+	public List<ShipKind> ShipKinds { get; init; } = [];
+	IReadOnlyCollection<ShipKind> IGameMode.ShipKinds => ShipKinds;
+}
 
 public record GameConfig
 {
@@ -171,7 +177,7 @@ public record GameConfig
 		}
 	}
 	// TODO! FakePlayerCount
-	public required GameMode Mode { get; init; }
+	public required IGameMode Mode { get; init; }
 	public required ShipPlacement[,] Placements
 	{
 		get;
