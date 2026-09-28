@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Battleship;
 
@@ -183,8 +184,6 @@ public record GameConfig
 	}
 }
 
-
-
 public record Ship
 {
 	public required ShipPlacement Placement { get; init; }
@@ -208,19 +207,17 @@ public record Ship
 	public bool IsHorizontal => Orientation is Orientation.Horizontal;
 	public bool IsVertical => Orientation is Orientation.Vertical;
 
-	public int MinX => X;
-	public int MinY => Y;
-	public int MaxX => IsHorizontal ? X + Length : X;
-	public int MaxY => IsVertical ? Y + Length : Y;
-
 	public ShipKind Kind => Placement.Kind;
 	public string Name => Kind.Name;
 	public int Length => Kind.Length;
 
 	public bool IsSunk => Cells.All(static x => x.HasPeg);
 
-	public bool Overlaps(Ship that) => MaxX >= that.MinX && MinX <= that.MaxX && MaxY >= that.MinY && MinY <= that.MaxY;
-	public bool Overlaps(int x, int y) => x >= MinX && x <= MaxX && y >= MinY && y <= MaxY;
+	public bool Overlaps(Ship that) => Maths.BoxOverlapsBox(
+		X, Y, IsHorizontal ? Length : 1, IsVertical ? Length : 1,
+		that.X, that.Y, that.IsHorizontal ? that.Length : 1, that.IsVertical ? that.Length : 1
+		);
+	public bool Overlaps(int x, int y) => Maths.BoxOverlapsPoint(X, Y, IsHorizontal ? Length : 1, IsVertical ? Length : 1, x, y);
 }
 
 public record ShipKind
@@ -275,3 +272,15 @@ public class PositionEventArgs : EventArgs
 	public required int X { get; init; }
 	public required int Y { get; init; }
 };
+
+public static class Maths
+{
+	public static bool BoxOverlapsPoint(int bx, int by, int w, int h, int px, int py)
+	{
+		return px >= bx && px < bx + w && py >= by && py < by + h;
+	}
+	public static bool BoxOverlapsBox(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2)
+	{
+		return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+	}
+}
