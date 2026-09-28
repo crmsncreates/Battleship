@@ -1,8 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.X509Certificates;
-using Windows.UI.Popups;
-using Windows.Web.Http;
-using static Battleship.Board;
 
 namespace Battleship;
 
@@ -19,9 +15,10 @@ public class Game
 {
 	public GameConfig Config => _config;
 	public int PlayerCount => _config.RealPlayerCount;
-	public int BoardWidth => _config.BoardWidth;
-	public int BoardHeight => _config.BoardHeight;
-	public IReadOnlyCollection<ShipKind> ShipKinds => _config.ShipKinds;
+	public GameMode Mode => _config.Mode;
+	public int BoardWidth => _config.Mode.BoardWidth;
+	public int BoardHeight => _config.Mode.BoardHeight;
+	public IReadOnlyCollection<ShipKind> ShipKinds => _config.Mode.ShipKinds;
 	public IReadOnlyCollection<Player> Players => _players;
 
 	readonly GameConfig _config;
@@ -34,8 +31,8 @@ public class Game
 		for (var p = 0; p < PlayerCount; p++)
 		{
 			_players[p] = new(new Board(
-				_config.BoardWidth,
-				_config.BoardHeight,
+				_config.Mode.BoardWidth,
+				_config.Mode.BoardHeight,
 				placements: Enumerable.Range(0, _config.Placements.GetLength(1)).Select(i => _config.Placements[p, i])
 			));
 		}
@@ -142,21 +139,21 @@ public abstract class GameMode
 {
 	public abstract int BoardWidth { get; }
 	public abstract int BoardHeight { get; }
-	public abstract IEnumerable<int> ShipLengths { get; }
+	public abstract IReadOnlyCollection<ShipKind> ShipKinds { get; }
 }
 
 public class NormalGameMode : GameMode
 {
 	public override int BoardWidth => 10;
 	public override int BoardHeight => 10;
-	public override IEnumerable<int> ShipLengths => [5, 4, 3, 3, 2];
+	public override IReadOnlyCollection<ShipKind> ShipKinds => [new() { Name = "Carrier", Length = 5 }, new() { Name = "Battleship", Length = 4 }, new() { Name = "Cruiser", Length = 3 }, new() { Name = "Submarine", Length = 3 }, new() { Name = "Destroyer", Length = 2 }];
 }
 
 public class OldTimesGameMode : GameMode
 {
 	public override int BoardWidth => 10;
 	public override int BoardHeight => 10;
-	public override IEnumerable<int> ShipLengths => [5, 4, 3, 3, 2];
+	public override IReadOnlyCollection<ShipKind> ShipKinds => [new() { Name = "Carrier", Length = 5 }, new() { Name = "Battleship", Length = 4 }, new() { Name = "Cruiser", Length = 3 }, new() { Name = "Submarine", Length = 3 }, new() { Name = "Destroyer", Length = 2 }];
 }
 
 // TODO! CustomGameMode
@@ -173,40 +170,14 @@ public record GameConfig
 		}
 	}
 	// TODO! FakePlayerCount
-	public required int BoardWidth
-	{
-		get;
-		init
-		{
-			ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
-			field = value;
-		}
-	}
-	public required int BoardHeight
-	{
-		get;
-		init
-		{
-			ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
-			field = value;
-		}
-	}
-	public required ShipKind[] ShipKinds
-	{
-		get;
-		init
-		{
-			ArgumentOutOfRangeException.ThrowIfZero(value.Length);
-			field = value;
-		}
-	}
+	public required GameMode Mode { get; init; }
 	public required ShipPlacement[,] Placements
 	{
 		get;
 		init
 		{
 			ArgumentOutOfRangeException.ThrowIfNotEqual(value.GetLength(0), RealPlayerCount);
-			ArgumentOutOfRangeException.ThrowIfNotEqual(value.GetLength(1), ShipKinds.Length);
+			ArgumentOutOfRangeException.ThrowIfNotEqual(value.GetLength(1), Mode.ShipKinds.Count);
 			field = value;
 		}
 	}
@@ -217,7 +188,7 @@ public record GameConfig
 public record Ship
 {
 	public required ShipPlacement Placement { get; init; }
-	public required Cell[] Cells
+	public required Board.Cell[] Cells
 	{
 		get;
 		init
@@ -251,6 +222,7 @@ public record Ship
 	public bool Overlaps(Ship that) => MaxX >= that.MinX && MinX <= that.MaxX && MaxY >= that.MinY && MinY <= that.MaxY;
 	public bool Overlaps(int x, int y) => x >= MinX && x <= MaxX && y >= MinY && y <= MaxY;
 }
+
 public record ShipKind
 {
 	public required string Name { get; init; }
