@@ -5,30 +5,52 @@ using Windows.Web.Http;
 
 namespace Battleship;
 
+
+// the basic flow will be:
+// |> forms build up a game config (mode, player count, ship kinds and locations)
+// |> game config is used to create a game
+// |> form controls the game, runs until somebody wins
+// |> victory screen is shown via form, and that game is thrown to the garbage collector
+
+
+// a running game
 public class Game
 {
-	public int PlayerCount => _config.PlayerCount;
+	public GameConfig Config => _config;
+	public int PlayerCount => _config.RealPlayerCount;
 	public int BoardWidth => _config.BoardWidth;
 	public int BoardHeight => _config.BoardHeight;
 	public IReadOnlyCollection<ShipKind> ShipKinds => _config.ShipKinds;
-	public IReadOnlyCollection<Board> Boards => _boards;
+	public IReadOnlyCollection<Player> Players => _players;
 
 	readonly GameConfig _config;
-	readonly Board[] _boards;
+	readonly Player[] _players;
 
 	public Game(GameConfig config)
 	{
 		_config = config;
-		_boards = new Board[PlayerCount];
+		_players = new Player[PlayerCount];
 		for (var p = 0; p < PlayerCount; p++)
 		{
-			_boards[p] = new Board(
+			_players[p] = new(new Board(
 				_config.BoardWidth,
 				_config.BoardHeight,
 				placements: Enumerable.Range(0, _config.Placements.GetLength(1)).Select(i => _config.Placements[p, i])
-			);
+			));
 		}
 	}
+}
+
+public class Player
+{
+	public Board Board { get; }
+
+	public Player(Board board)
+	{
+		Board = board;
+	}
+
+	// TODO! Handle input
 }
 
 public class Board
@@ -38,23 +60,23 @@ public class Board
 
 	public int Width => _cells.GetLength(0);
 	public int Height => _cells.GetLength(1);
-	public IReadOnlyCollection<ShipInfo> Ships => _ships;
+	public IReadOnlyCollection<Ship> Ships => _ships;
 
-	readonly CellInfo[,] _cells;
-	readonly ShipInfo[] _ships;
+	readonly Cell[,] _cells;
+	readonly Ship[] _ships;
 
 	public Board(int width, int height, IEnumerable<ShipPlacement> placements)
 	{
-		_cells = new CellInfo[width, height];
+		_cells = new Cell[width, height];
 		_ships = [..PlaceShips()];
 
-		IEnumerable<ShipInfo> PlaceShips()
+		IEnumerable<Ship> PlaceShips()
 		{
 			foreach (var placement in placements)
 			{
 				var kind = placement.Kind;
 				var klen = kind.Length;
-				var cells = new CellInfo[klen];
+				var cells = new Cell[klen];
 				switch (placement.Orientation)
 				{
 					case Orientation.Horizontal:
@@ -75,10 +97,10 @@ public class Board
 		}
 	}
 
-	public CellInfo GetCellAt(int x, int y) => _cells[x, y];
+	public Cell GetCellAt(int x, int y) => _cells[x, y];
 
 	public bool HasShipAt(int x, int y) => GetCellAt(x, y).HasShip;
-	public bool TryGetShipAt(int x, int y, [MaybeNullWhen(false)] out ShipInfo ship)
+	public bool TryGetShipAt(int x, int y, [MaybeNullWhen(false)] out Ship ship)
 	{
 		ship = GetCellAt(x, y).Ship;
 		return ship is not null;
@@ -106,10 +128,10 @@ public class Board
 		return true;
 	}
 
-	public record ShipInfo
+	public record Ship
 	{
 		public required ShipPlacement Placement { get; init; }
-		public required CellInfo[] Cells
+		public required Cell[] Cells
 		{
 			get;
 			init
@@ -140,21 +162,44 @@ public class Board
 
 		public bool IsSunk => Cells.All(static x => x.HasPeg);
 
-		public bool Overlaps(ShipInfo that) => MaxX >= that.MinX && MinX <= that.MaxX && MaxY >= that.MinY && MinY <= that.MaxY;
+		public bool Overlaps(Ship that) => MaxX >= that.MinX && MinX <= that.MaxX && MaxY >= that.MinY && MinY <= that.MaxY;
 		public bool Overlaps(int x, int y) => x >= MinX && x <= MaxX && y >= MinY && y <= MaxY;
 	}
-	public class CellInfo
+	public class Cell
 	{
-		public ShipInfo? Ship { get; set; } = null;
+		public Ship? Ship { get; set; } = null;
 		public bool HasPeg { get; set; } = false;
 
 		public bool HasShip => Ship is not null;
 	}
 }
 
+public abstract class GameMode
+{
+	public abstract int BoardWidth { get; }
+	public abstract int BoardHeight { get; }
+	public abstract IEnumerable<int> ShipLengths { get; }
+}
+
+public class NormalGameMode : GameMode
+{
+	public override int BoardWidth => 10;
+	public override int BoardHeight => 10;
+	public override IEnumerable<int> ShipLengths => [5, 4, 3, 3, 2];
+}
+
+public class OldTimesGameMode : GameMode
+{
+	public override int BoardWidth => 10;
+	public override int BoardHeight => 10;
+	public override IEnumerable<int> ShipLengths => [5, 4, 3, 3, 2];
+}
+
+// TODO! CustomGameMode
+
 public record GameConfig
 {
-	public required int PlayerCount
+	public required int RealPlayerCount
 	{
 		get;
 		init
@@ -163,6 +208,7 @@ public record GameConfig
 			field = value;
 		}
 	}
+	// TODO! FakePlayerCount
 	public required int BoardWidth
 	{
 		get;
@@ -195,7 +241,7 @@ public record GameConfig
 		get;
 		init
 		{
-			ArgumentOutOfRangeException.ThrowIfNotEqual(value.GetLength(0), PlayerCount);
+			ArgumentOutOfRangeException.ThrowIfNotEqual(value.GetLength(0), RealPlayerCount);
 			ArgumentOutOfRangeException.ThrowIfNotEqual(value.GetLength(1), ShipKinds.Length);
 			field = value;
 		}
