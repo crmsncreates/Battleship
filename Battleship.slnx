@@ -2,5 +2,6 @@
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
   </Folder>
-  <Project Path="Battleship.csproj" />
+  <Project Path="Battleship.Tests/Battleship.Tests.csproj" Id="1ceb2890-42d1-479b-a119-5014edf9a731" />
+  <Project Path="Battleship/Battleship.csproj" />
 </Solution>
