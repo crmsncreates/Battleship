@@ -2,6 +2,7 @@
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
   </Folder>
+  <Project Path="Battleship.Game/Battleship.Game.csproj" Id="e3ca0fed-497c-4d2d-b3f8-d33ada33869b" />
   <Project Path="Battleship.Tests/Battleship.Tests.csproj" Id="1ceb2890-42d1-479b-a119-5014edf9a731" />
   <Project Path="Battleship/Battleship.csproj" />
 </Solution>

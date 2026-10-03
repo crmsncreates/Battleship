@@ -29,8 +29,10 @@
 		private void InitializeComponent()
 		{
 			splitContainer1 = new SplitContainer();
+			btnConfig = new Button();
 			boardTable = new TableLayoutPanel();
 			((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
+			splitContainer1.Panel1.SuspendLayout();
 			splitContainer1.Panel2.SuspendLayout();
 			splitContainer1.SuspendLayout();
 			SuspendLayout();
@@ -42,6 +44,10 @@
 			splitContainer1.Location = new Point(0, 0);
 			splitContainer1.Name = "splitContainer1";
 			// 
+			// splitContainer1.Panel1
+			// 
+			splitContainer1.Panel1.Controls.Add(btnConfig);
+			// 
 			// splitContainer1.Panel2
 			// 
 			splitContainer1.Panel2.Controls.Add(boardTable);
@@ -49,6 +55,16 @@
 			splitContainer1.Size = new Size(782, 453);
 			splitContainer1.SplitterDistance = 326;
 			splitContainer1.TabIndex = 0;
+			// 
+			// btnConfig
+			// 
+			btnConfig.Location = new Point(12, 12);
+			btnConfig.Name = "btnConfig";
+			btnConfig.Size = new Size(94, 29);
+			btnConfig.TabIndex = 0;
+			btnConfig.Text = "configure";
+			btnConfig.UseVisualStyleBackColor = true;
+			btnConfig.Click += btnConfig_Click;
 			// 
 			// boardTable
 			// 
@@ -97,6 +113,7 @@
 			ShowIcon = false;
 			Text = "BATTLE SHIP";
 			Load += MainForm_Load;
+			splitContainer1.Panel1.ResumeLayout(false);
 			splitContainer1.Panel2.ResumeLayout(false);
 			((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
 			splitContainer1.ResumeLayout(false);
@@ -107,5 +124,6 @@
 
 		private SplitContainer splitContainer1;
 		private TableLayoutPanel boardTable;
+		private Button btnConfig;
 	}
 }

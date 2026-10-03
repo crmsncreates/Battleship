@@ -1,7 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography.X509Certificates;
+using System.Windows.Forms;
 
-namespace Battleship;
+namespace Battleship.Game;
 
 
 // the basic flow will be:
@@ -67,7 +68,7 @@ public class Board
 	public Board(int width, int height, IEnumerable<ShipPlacement> placements)
 	{
 		_cells = new Cell[width, height];
-		_ships = [..PlaceShips()];
+		_ships = [.. PlaceShips()];
 
 		IEnumerable<Ship> PlaceShips()
 		{
