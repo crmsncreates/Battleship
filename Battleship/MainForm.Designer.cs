@@ -29,6 +29,9 @@
 		private void InitializeComponent()
 		{
 			splitContainer1 = new SplitContainer();
+			clbShips = new CheckedListBox();
+			btnNewGame = new Button();
+			btnForfeit = new Button();
 			btnConfig = new Button();
 			boardTable = new TableLayoutPanel();
 			((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
@@ -46,6 +49,9 @@
 			// 
 			// splitContainer1.Panel1
 			// 
+			splitContainer1.Panel1.Controls.Add(clbShips);
+			splitContainer1.Panel1.Controls.Add(btnNewGame);
+			splitContainer1.Panel1.Controls.Add(btnForfeit);
 			splitContainer1.Panel1.Controls.Add(btnConfig);
 			// 
 			// splitContainer1.Panel2
@@ -55,6 +61,37 @@
 			splitContainer1.Size = new Size(782, 453);
 			splitContainer1.SplitterDistance = 326;
 			splitContainer1.TabIndex = 0;
+			// 
+			// clbShips
+			// 
+			clbShips.Dock = DockStyle.Bottom;
+			clbShips.Enabled = false;
+			clbShips.FormattingEnabled = true;
+			clbShips.HorizontalScrollbar = true;
+			clbShips.Location = new Point(0, 273);
+			clbShips.Name = "clbShips";
+			clbShips.Size = new Size(326, 180);
+			clbShips.Sorted = true;
+			clbShips.TabIndex = 2;
+			clbShips.MouseDown += clbShips_MouseDown;
+			// 
+			// btnNewGame
+			// 
+			btnNewGame.Location = new Point(12, 47);
+			btnNewGame.Name = "btnNewGame";
+			btnNewGame.Size = new Size(94, 29);
+			btnNewGame.TabIndex = 1;
+			btnNewGame.Text = "new game";
+			btnNewGame.UseVisualStyleBackColor = true;
+			// 
+			// btnForfeit
+			// 
+			btnForfeit.Location = new Point(12, 82);
+			btnForfeit.Name = "btnForfeit";
+			btnForfeit.Size = new Size(94, 29);
+			btnForfeit.TabIndex = 1;
+			btnForfeit.Text = "forfeit";
+			btnForfeit.UseVisualStyleBackColor = true;
 			// 
 			// btnConfig
 			// 
@@ -68,6 +105,7 @@
 			// 
 			// boardTable
 			// 
+			boardTable.AllowDrop = true;
 			boardTable.CellBorderStyle = TableLayoutPanelCellBorderStyle.Single;
 			boardTable.ColumnCount = 10;
 			boardTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 10F));
@@ -125,5 +163,8 @@
 		private SplitContainer splitContainer1;
 		private TableLayoutPanel boardTable;
 		private Button btnConfig;
+		private Button btnForfeit;
+		private CheckedListBox clbShips;
+		private Button btnNewGame;
 	}
 }

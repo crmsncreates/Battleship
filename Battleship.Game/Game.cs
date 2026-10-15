@@ -50,7 +50,10 @@ public class Player
 		Board = board;
 	}
 
-	// TODO! Handle input
+	public void Touch(int x, int y)
+	{
+		
+	}
 }
 
 public class Board

@@ -1,4 +1,5 @@
 ﻿namespace Battleship;
+
 using Battleship.Game;
 using System;
 using System.Collections.Generic;
