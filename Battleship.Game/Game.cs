@@ -15,6 +15,15 @@ namespace Battleship.Game;
 // a running game
 public class Game
 {
+	// used to clear the board and display gameover info
+	public event Action? GameOver;
+
+	// used to clear the board
+	public event Action? Shrouding;
+
+	// used to populate the board
+	public event Action? Unshrouding;
+
 	public GameConfig Config => _config;
 	public int PlayerCount => _config.RealPlayerCount;
 	public IGameMode Mode => _config.Mode;
@@ -23,8 +32,28 @@ public class Game
 	public IReadOnlyCollection<ShipKind> ShipKinds => _config.Mode.ShipKinds;
 	public IReadOnlyCollection<Player> Players => _players;
 
+	public Player CurrentPlayer => _players[_currentPlayer];
+	public int CurrentPlayerIndex => _currentPlayer;
+	public Player NextPlayer => _players[NextPlayerIndex];
+	public int NextPlayerIndex => (_currentPlayer + 1) % PlayerCount;
+
+	// when this is TRUE, the BOARD's contents are invisible until the READY button is clicked
+	public bool Shrouded
+	{
+		get => _shrouded;
+		set
+		{
+			if (_shrouded = value)
+				Shrouding?.Invoke();
+			else
+				Unshrouding?.Invoke();
+		}
+	}
+
 	readonly GameConfig _config;
 	readonly Player[] _players;
+	int _currentPlayer = 0;
+	bool _shrouded = true;
 
 	public Game(GameConfig config)
 	{
@@ -32,13 +61,21 @@ public class Game
 		_players = new Player[PlayerCount];
 		for (var p = 0; p < PlayerCount; p++)
 		{
-			_players[p] = new(new Board(
+			_players[p] = new(new(
 				_config.Mode.BoardWidth,
 				_config.Mode.BoardHeight,
 				placements: Enumerable.Range(0, _config.Placements.GetLength(1)).Select(i => _config.Placements[p, i])
 			));
 		}
 	}
+
+	public void BeginTurn(int player)
+	{
+		_currentPlayer = player;
+		Shrouded = true;
+	}
+
+	public void NextTurn() => BeginTurn(NextPlayerIndex);
 }
 
 public class Player
@@ -48,11 +85,6 @@ public class Player
 	public Player(Board board)
 	{
 		Board = board;
-	}
-
-	public void Touch(int x, int y)
-	{
-		
 	}
 }
 
