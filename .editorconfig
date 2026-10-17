@@ -9,4 +9,6 @@ indent_size = 4
 tab_width = 4
 
 [*.cs]
-
+csharp_prefer_braces = true:suggestion
+csharp_preserve_single_line_blocks = true
+csharp_preserve_single_line_statements = false

@@ -1,78 +1,152 @@
-﻿namespace Battleship;
+namespace Battleship;
 
 using Battleship.Game;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Windows.Forms;
+using System.Diagnostics.CodeAnalysis;
 
 public partial class ConfigForm : Form
 {
-	Config _config;
+	readonly Config _config;
 
-	public ConfigForm()
+	bool _halted;
+
+	public ConfigForm() : this(null) { }
+
+	public ConfigForm(Config? previous)
 	{
 		InitializeComponent();
 
-		propertyGrid1.SelectedObject = _config = new Config();
+		_config = previous?.Clone() ?? new();
+		
+		propertyGrid1.SelectedObject = _config;
+		
+		fleetTable.AutoGenerateColumns = false;
+		fleetTable.DataSource = _config.Ships;
 	}
 
-	public GameConfig BuildConfig()
+	public Config BuildRules()
 	{
-		List<ShipKind> kinds = [
-			new() { Length = _config.Ship1.Length, Name = _config.Ship1.Name },
-			new() { Length = _config.Ship2.Length, Name = _config.Ship2.Name },
-			new() { Length = _config.Ship3.Length, Name = _config.Ship3.Name },
-			new() { Length = _config.Ship4.Length, Name = _config.Ship4.Name },
-			new() { Length = _config.Ship5.Length, Name = _config.Ship5.Name }
-		];
-		List<ShipPlacement> placements = [
-			new() { X = _config.Ship1.X, Y = _config.Ship1.Y, Orientation = _config.Ship1.Orientation, Kind = kinds[0] },
-			new() { X = _config.Ship2.X, Y = _config.Ship2.Y, Orientation = _config.Ship2.Orientation, Kind = kinds[1] },
-			new() { X = _config.Ship3.X, Y = _config.Ship3.Y, Orientation = _config.Ship3.Orientation, Kind = kinds[2] },
-			new() { X = _config.Ship4.X, Y = _config.Ship4.Y, Orientation = _config.Ship4.Orientation, Kind = kinds[3] },
-			new() { X = _config.Ship5.X, Y = _config.Ship5.Y, Orientation = _config.Ship5.Orientation, Kind = kinds[4] },
-		];
-		var p2d = new ShipPlacement[2, 5];
-		for (int i = 0; i < 5; ++i) p2d[1, i] = p2d[0, i] = placements[i];
-		return new()
+		_config.Validate();
+		return _config.Clone();
+	}
+
+	private void btnNext_Click(object? sender, EventArgs e)
+	{
+		if (!ValidateChildren() || !fleetTable.EndEdit())
 		{
-			Mode = new NormalGameMode(),
-			RealPlayerCount = 2,
-			Placements = p2d
-		};
-	}
+			return;
+		}
 
-	private void btnCancel_Click(object sender, EventArgs e)
-	{
-		DialogResult = DialogResult.Cancel;
-	}
+		BindingContext?[_config.Ships]?.EndCurrentEdit();
 
-	private void btnOk_Click(object sender, EventArgs e)
-	{
+		if (!_config.TryValidate(out var error))
+		{
+			ShowInputError(error);
+			return;
+		}
+
 		DialogResult = DialogResult.OK;
+	}
+
+	void ShowInputError(string message)
+	{
+		if (_halted)
+		{
+			return;
+		}
+
+		_halted = true;
+		lblStatus.Text = message;
+
+		try
+		{
+			MessageBox.Show(this, message, "invalid rules", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+		}
+		finally
+		{
+			_halted = false;
+		}
+	}
+
+	private void btnCancel_Click(object? sender, EventArgs e) => DialogResult = DialogResult.Cancel;
+
+	private void fleetTable_DataError(object? sender, DataGridViewDataErrorEventArgs e)
+	{
+		e.ThrowException = false;
+		e.Cancel = true;
+		ShowInputError("ship length must be in [1..10].");
 	}
 }
 
 public class Config
 {
-	public Metaship Ship1 { get; set; } = new() { Name = "1", Length = 2, X = 1 };
-	public Metaship Ship2 { get; set; } = new() { Name = "2", Length = 3, X = 2 };
-	public Metaship Ship3 { get; set; } = new() { Name = "3", Length = 4, X = 3 };
-	public Metaship Ship4 { get; set; } = new() { Name = "4", Length = 4, X = 4 };
-	public Metaship Ship5 { get; set; } = new() { Name = "5", Length = 5, X = 5 };
+	public Config(GameConfig? previous = null)
+	{
+		if (previous is null)
+		{
+			return;
+		}
 
-	[TypeConverter(typeof(ExpandableObjectConverter))]
+		RealPlayerCount = previous.RealPlayerCount;
+		MissilesPerUnhitTile = previous.Mode.MissilesPerUnhitTile;
+		Ships.Clear();
+
+		foreach (var kind in previous.Mode.ShipKinds)
+		{
+			Ships.Add(new() { Name = kind.Name, Length = kind.Length });
+		}
+	}
+
+	public Config Clone()
+	{
+		var copy = new Config { RealPlayerCount = RealPlayerCount, MissilesPerUnhitTile = MissilesPerUnhitTile };
+
+		copy.Ships.Clear();
+
+		foreach (var ship in Ships)
+		{
+			copy.Ships.Add(new() { Name = ship.Name, Length = ship.Length });
+		}
+
+		return copy;
+	}
+
+	public bool TryValidate([NotNullWhen(false)] out string? error)
+	{
+		error = this switch
+		{
+			{ RealPlayerCount: < 2 } => "at least two players are required.",
+			{ Ships: [] } => "add at least one ship before continuing.",
+			_ when Ships.Any(ship => string.IsNullOrWhiteSpace(ship.Name)) => "each ship needs a name.",
+			_ when Ships.Any(ship => ship.Length is < 1 or > 10) => "ship length must be from 1 to 10.",
+			_ when Ships.Sum(ship => ship.Length) > 100 => "your ships use more than 100 tiles. shorten or remove a ship.",
+			_ => null
+		};
+
+		return error is null;
+	}
+
+	public void Validate()
+	{
+		if (!TryValidate(out var error))
+		{
+			throw new ArgumentException(error);
+		}
+	}
+
+	[Category("rules"), DisplayName("players"), Description("two or more people sharing this pc.")]
+	public int RealPlayerCount { get; set; } = 2;
+
+	[Category("rules"), DisplayName("missiles/tile"), Description("when false, you get 1 missile per turn.\nwhen true, players get 1 missile for each un-hit tile in your own fleet.")]
+	public bool MissilesPerUnhitTile { get; set; }
+
+	[Browsable(false)]
+	public BindingList<Metaship> Ships { get; } = [.. new NormalGameMode().ShipKinds.Select(kind => new Metaship { Name = kind.Name, Length = kind.Length })];
+
 	public class Metaship
 	{
-		public string Name { get; set; } = "";
-		public int Length { get; set; } = 1;
-		public int X { get; set; } = 0;
-		public int Y { get; set; } = 0;
-		public Orientation Orientation { get; set; } = Orientation.Vertical;
+		public string Name { get; set; } = "ship";
+
+		public int Length { get; set; } = 2;
 	}
 }
